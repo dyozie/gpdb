@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE bookmap PUBLIC "-//OASIS//DTD DITA BookMap//EN" "bookmap.dtd">
+<bookmap xmlns:ditaarch="http://dita.oasis-open.org/architecture/2005/" id="book"
+  ditaarch:DITAArchVersion="1.1">
+  <booktitle>
+    <booklibrary id="product_name">
+      <tm trademark="Pivotal" tmtype="tm">Pivotal</tm>
+      <tm trademark="tc Server" tmtype="reg">Greenplum Database</tm>
+    </booklibrary>
+    <mainbooktitle id="pdf_version">Version 5.0.0 Beta</mainbooktitle>
+    <booktitlealt id="pdf_title">Pivotal Greenplum Database Documentation</booktitlealt>
+    <booktitlealt id="pdf_revision_number">Rev: A01</booktitlealt>
+    <booktitlealt id="copyright_date">&#169; 2017 Pivotal Software, Inc.</booktitlealt>
+  </booktitle>
+  <frontmatter>
+    <booklists>
+      <toc/>
+    </booklists>
+    <notices href="admin_guide/pivotal-copyright.xml"/>
+  </frontmatter>
+  <chapter href="../../../docs-pivotal-gpdb/relnotes/relnotes.ditamap" format="ditamap"/>
+  <chapter href="../../../docs-pivotal-gpdb/install_guide/install_guide.ditamap" format="ditamap"/>
+  <chapter href="admin_guide/admin_guide.ditamap" format="ditamap"/>
+  <chapter href="best_practices/best-practices.ditamap" format="ditamap"/>
+  <chapter href="utility_guide/utility_guide.ditamap" format="ditamap"/>
+  <chapter href="ref_guide/ref_guide.ditamap" format="ditamap"/>
+  <chapter href="client_tool_guides/client_tool_guides.ditamap" format="ditamap"/>
+</bookmap>
