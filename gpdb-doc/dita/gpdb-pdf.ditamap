@@ -9,7 +9,11 @@
     </booklibrary>
     <mainbooktitle id="pdf_version">Version 5.0.0</mainbooktitle>
     <booktitlealt id="pdf_title">Pivotal Greenplum Database Documentation</booktitlealt>
+<<<<<<< Updated upstream
     <booktitlealt id="pdf_revision_number">Rev: A01</booktitlealt>
+=======
+    <booktitlealt id="pdf_revision_number">Rev: A03</booktitlealt>
+>>>>>>> Stashed changes
     <booktitlealt id="copyright_date">&#169; 2017 Pivotal Software, Inc.</booktitlealt>
   </booktitle>
   <frontmatter>
@@ -24,6 +28,10 @@
   <chapter href="best_practices/best-practices.ditamap" format="ditamap"/>
   <chapter href="utility_guide/utility_guide.ditamap" format="ditamap"/>
   <chapter href="ref_guide/ref_guide.ditamap" format="ditamap"/>
+<<<<<<< Updated upstream
   <chapter href="client_tool_guides/client_tool_guides.ditamap" format="ditamap"/>
+=======
+  <chapter href="../../../docs-pivotal-gpdb/client_tool_guides/client_tool_guides.ditamap" format="ditamap"/>
+>>>>>>> Stashed changes
   <chapter href="../../../docs-pivotal-gpdb/datadirect/datadirect.ditamap" format="ditamap"/>
 </bookmap>
