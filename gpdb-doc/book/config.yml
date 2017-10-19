@@ -5,9 +5,16 @@ public_host: localhost:9292
 dita_sections:
 - repository:
     name: dita
-  directory: docs
+  directory: docs/dita
   ditamap_location: gpdb-webhelp.ditamap
   ditaval_location: gpdb-webhelp.ditaval
+
+sections:
+- repository:
+    name: markdown
+    at_path: pxf
+  directory: docs/pxf
+  subnav_template: pxf-subnav
 
 template_variables:
   book_title: Greenplum Database Documentation

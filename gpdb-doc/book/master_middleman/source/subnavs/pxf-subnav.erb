@@ -2,11 +2,14 @@
   <a class="sidenav-title" data-behavior="SubMenuMobile">  Doc Index</a>
   <div class="nav-content">
     <ul>
+      <li>
+        <a href="/docs/common/gpdb-features.html">Greenplum Database Documentation</a>
+      </li>
       <li class="has_submenu">
-        <a href="/docs/pxf/intro_pxf.html" format="markdown">PXF Extension Framework</a>
+        <a href="/docs/pxf/overview_pxf.html" format="markdown">PXF Extension Framework</a>
         <ul>
           <li>
-            <a href="/docs/pxf/intro_pxf.html" format="markdown">Introducing the PXF Extension Framework</a>
+            <a href="/docs/pxf/intro_pxf.html" format="markdown">PXF Architecture</a>
           </li>
           <li class="has_submenu">
             <a href="/docs/pxf/instcfg_pxf.html" format="markdown">Installing and Configuring PXF</a>
@@ -24,8 +27,19 @@
          <li>
            <a href="/docs/pxf/using_pxf.html" format="markdown">Using PXF</a>
         </li>
-        <li>
+        <li class="has_submenu">
            <a href="/docs/pxf/hdfs_read_pxf.html" format="markdown">Reading HDFS File Data with PXF</a>
+            <ul>
+         <li>
+           <a href="/docs/pxf/hdfs_read_pxf.html#profile_hdfstextsimple" format="markdown">Reading Text Files</a>
+        </li>
+         <li>
+           <a href="/docs/pxf/hdfs_read_pxf.html#profile_hdfstextmulti" format="markdown">Reading Text Files with Quoted Linefeeds</a>
+        </li>
+         <li>
+           <a href="/docs/pxf/hdfs_read_pxf.html#profile_hdfsavro" format="markdown">Reading Avro Files</a>
+        </li>
+            </ul>
         </li>
         <li>
            <a href="/docs/pxf/hive_pxf.html" format="markdown">Accessing Hive Table Data with PXF</a>
@@ -33,6 +47,10 @@
         <li>
            <a href="/docs/pxf/troubleshooting_pxf.html" format="markdown">Troubleshooting PXF</a>
         </li>
+        <li>
+           <a href="/docs/admin_guide/external/pxf-overview.html" format="dita" scope="peer">Back to the Administrator Guide</a>
+        </li>
+      </ul>
       </ul>
     </li>
     </ul>
