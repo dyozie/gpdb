@@ -1,0 +1,79 @@
+---
+title: Removing Duplicate Entries from Catalog Tables
+---
+
+Most Greenplum Database catalog tables have unique indexes on certain columns, including the automatically-generated system column OID.  Indexing or transaction management problems can lead to scenarios where duplicate entries are added to catalog tables.  Follow the steps in this procedure to remove duplicate entries.
+
+## Prerequisites
+
+- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog. This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data.
+
+- Use `gpcheckcat` to verify that your system catalog contains duplicate entries. See [Resolving System Catalog Issues](resolve-catalog-issues.html) for a list of common symptoms.
+
+- Perform a full backup of your database before you perform this procedure.
+
+## Procedure
+
+1. As the `gpadmin` user, use the `psql` utility to start a utility-mode connection to the segment where the duplicate catalog entry has been identified.  Enter the command:
+
+    ``` bash
+    $ PGOPTIONS='-c gp_session_role=utility' psql -h <segment_host> -p <segment_port> <database_name>
+    ```
+
+    Substitute the `<segment_host>`, `<segment_port>`, and `<database_name>` for your system.
+
+2. Use the `\d+` command to list all of the indexes that are available on the affected table. For example, if your troubleshooting process identified duplicate entries on the `pg_class` table, you would enter:
+
+    ``` sql
+    gpadmin=# \d+ pg_class
+                           Table "pg_catalog.pg_class"
+         Column     |   Type    | Modifiers | Storage  | Description
+    ----------------+-----------+-----------+----------+-------------
+     relname        | name      | not null  | plain    |
+     relnamespace   | oid       | not null  | plain    |
+     reltype        | oid       | not null  | plain    |
+     relowner       | oid       | not null  | plain    |
+     relam          | oid       | not null  | plain    |
+     relfilenode    | oid       | not null  | plain    |
+     reltablespace  | oid       | not null  | plain    |
+     relpages       | integer   | not null  | plain    |
+     reltuples      | real      | not null  | plain    |
+     reltoastrelid  | oid       | not null  | plain    |
+     reltoastidxid  | oid       | not null  | plain    |
+     relhasindex    | boolean   | not null  | plain    |
+     relisshared    | boolean   | not null  | plain    |
+     relkind        | "char"    | not null  | plain    |
+     relstorage     | "char"    | not null  | plain    |
+     relnatts       | smallint  | not null  | plain    |
+     relchecks      | smallint  | not null  | plain    |
+     reltriggers    | smallint  | not null  | plain    |
+     relukeys       | smallint  | not null  | plain    |
+     relfkeys       | smallint  | not null  | plain    |
+     relrefs        | smallint  | not null  | plain    |
+     relhasoids     | boolean   | not null  | plain    |
+     relhaspkey     | boolean   | not null  | plain    |
+     relhasrules    | boolean   | not null  | plain    |
+     relhassubclass | boolean   | not null  | plain    |
+     relfrozenxid   | xid       | not null  | plain    |
+     relacl         | aclitem[] |           | extended |
+     reloptions     | text[]    |           | extended |
+    Indexes:
+        "pg_class_oid_index" UNIQUE, btree (oid)
+        "pg_class_relname_nsp_index" UNIQUE, btree (relname, relnamespace)
+    Has OIDs: yes
+    ```
+
+3. Record the names of the indexed columns for each available index.  In the above example output for `pg_class`, you would record the `oid` column used in the first index, and the `relname` and `relnamespace` columns used in the second index.  You will need to use each set of indexed columns in separate SQL commands later in the procedure.
+
+4. Disable the system's use of indexes by entering these commands:
+
+    ``` SQL
+    gpadmin=# SET enable_indexscan TO off;
+    SET
+    gpadmin=# SET enable_bitmapscan TO off;
+    SET
+    ```
+
+    Disabling indexes in this way ensures that later SQL queries will perform a full table scan to reveal duplicate entries. When indexes are enabled, duplicate entries are sometimes not displayed in the query output.
+
+5. Perform the following query 
