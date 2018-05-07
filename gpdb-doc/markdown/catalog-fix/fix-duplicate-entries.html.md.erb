@@ -76,4 +76,20 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
 
     Disabling indexes in this way ensures that later SQL queries will perform a full table scan to reveal duplicate entries. When indexes are enabled, duplicate entries are sometimes not displayed in the query output.
 
-5. Perform the following query 
+5. Perform a query on each set of indexed columns that you recorded in Step 3, to display the values of duplicate entries. The query has the form:
+
+    ``` SQL
+    SELECT <columns>, count(*) FROM <table> GROUP BY <columns> HAVING count(*) > 1;
+    ```
+
+    Substitute the actual indexed column(s) that you determined in step 3, as well as the affected table name.  The `pg_class` example contains two indexes, and would require two queries. The first query, for the `pg_class_oid_index` index, is:
+
+    ``` SQL
+    gpadmin=# SELECT oid, count(*) FROM pg_class GROUP BY oid HAVING count(*) > 1 ;
+    ```
+
+    The second query, for the `pg_class_relname_nsp_index` index, is:
+
+    ``` SQL
+    gpadmin=# SELECT relname, relnamespace, count(*) FROM pg_class GROUP BY relname, relnamespace HAVING count(*) > 1 ;
+    ```
