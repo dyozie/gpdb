@@ -151,6 +151,10 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
 
     In the above output, the `relfilenode` values for the two rows differ. In these cases, where the rows for duplicate values contain differing system values, additional verification is needed to determine how to correct the problem. See [FIXME2](#fixme2).
 
-7. *If the remaining system column values in the duplicate rows match exactly*, record the `ctid` value of either duplicate row and continue with the next step.
+7. *If the remaining system column values in the duplicate rows match exactly*, record the `ctid` value of either duplicate row and skip to the next step.
 
-    *If **any** of the remaining system column values in the duplicate rows contain different values*, first follow the instructions in [FIXME2](#fixme2) to determine which of the rows is safe to remove. Continue with the next step only after you have carefully determined which row to remove.
+    *If **any** of the remaining system column values in the duplicate rows contain different values*, follow these steps to determine which of the rows is safe to remove. Continue with the next step only after you have carefully determined which row to remove:
+
+    **FIXME:** This procedure only seems to apply if `relfilenode` is the column with differing values.  Is that the only column users need to look at in previous step?  If not, what would this procedure look like to check other columns?
+
+    1. Record the significant system column values that *differ* in the output from the previous step. In the previous example, `relfilenode` differs and has the values 2703 and 2759.
