@@ -104,8 +104,8 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
     ``` SQL
     gpadmin=# SELECT relname, relnamespace, count(*) FROM pg_class GROUP BY relname, relnamespace HAVING count(*) > 1 ;
                             relname                             | relnamespace | count
-----------------------------------------------------------------+--------------+-------
- dup_table                                                      |           11 |     2
+    ----------------------------------------------------------------+--------------+-------
+     dup_table                                                      |           11 |     2
     (1 row)
     ```
 
@@ -127,7 +127,7 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
 
     ``` SQL
      xmin | xmax |  ctid   | oid  |    relname    | relnamespace | reltype | relowner | relam | relfilenode | reltablespace | relpages | reltuples | reltoastrelid | reltoastidxid | relhasindex | relisshared | relkind | relstorage | relnatts | relchecks | reltriggers | relukeys | relfkeys | relrefs | relhasoids | relhaspkey | relhasrules | relhassubclass | relfrozenxid | relacl | reloptions
-------+------+---------+------+---------------+--------------+---------+----------+-------+-------------+---------------+----------+-----------+---------------+---------------+-------------+-------------+---------+------------+----------+-----------+-------------+----------+----------+---------+------------+------------+-------------+----------------+--------------+--------+------------
+    ------+------+---------+------+---------------+--------------+---------+----------+-------+-------------+---------------+----------+-----------+---------------+---------------+-------------+-------------+---------+------------+----------+-----------+-------------+----------+----------+---------+------------+------------+-------------+----------------+--------------+--------+------------
       1 |    0 | (0,104) | 3233 | dup_table     |           99 |   11305 |       10 |     0 |        3233 |             0 |        1 |         0 |             0 |          3234 | t           | f           | t       | h          |        3 |         0 |           0 |        0 |        0 |       0 | f          | f          | f           | f              |          681 |        |
       2 |    0 | (0,112) | 3233 | dup_table     |           99 |   11305 |       10 |     0 |        3233 |             0 |        1 |         0 |             0 |          3234 | t           | f           | t       | h          |        3 |         0 |           0 |        0 |        0 |       0 | f          | f          | f           | f              |          681 |        |   
     (2 rows)
@@ -143,18 +143,48 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
 
     ``` SQL
      xmin | xmax |  ctid   | oid  |      relname      | relnamespace | reltype | relowner | relam | relfilenode | reltablespace | relpages | reltuples | reltoastrelid | reltoastidxid | relhasindex | relisshared | relkind | relstorage | relnatts | relchecks | reltriggers | relukeys | relfkeys | relrefs | relhasoids | relhaspkey | relhasrules | relhassubclass | relfrozenxid | relacl | reloptions
-------+------+---------+------+-------------------+--------------+---------+----------+-------+-------------+---------------+----------+-----------+---------------+---------------+-------------+-------------+---------+------------+----------+-----------+-------------+----------+----------+---------+------------+------------+-------------+----------------+--------------+--------+------------
+    ------+------+---------+------+-------------------+--------------+---------+----------+-------+-------------+---------------+----------+-----------+---------------+---------------+-------------+-------------+---------+------------+----------+-----------+-------------+----------+----------+---------+------------+------------+-------------+----------------+--------------+--------+------------
     1 |    0 | (0,186) | 2703 | dup_table         |           11 |       0 |       10 |   403 |        2703 |             0 |        2 |       393 |             0 |             0 | f           | f           | i       | h          |        1 |         0 |           0 |        0 |        0 |       0 | f          | f          | f           | f              |            0 |        |
     2 |    0 | (0,294) | 2703 | dup_table         |           11 |       0 |       10 |   403 |        2759 |             0 |        2 |       393 |             0 |             0 | f           | f           | i       | h          |        1 |         0 |           0 |        0 |        0 |       0 | f          | f          | f           | f              |            0 |        |
     (2 rows) 
     ```
 
-    In the above output, the `relfilenode` values for the two rows differ. In these cases, where the rows for duplicate values contain differing system values, additional verification is needed to determine how to correct the problem. See [FIXME2](#fixme2).
+    In the above output, the `relfilenode` values for the two rows differ. In these cases, where the rows for duplicate values contain differing system values, additional verification is needed to determine which row can be deleted.
 
-7. *If the remaining system column values in the duplicate rows match exactly*, record the `ctid` value of either duplicate row and skip to the next step.
+7. *If the remaining system column values in the duplicate rows match exactly*, record the `ctid` value of either duplicate row and skip to the next step to remove the duplicate value.
 
     *If **any** of the remaining system column values in the duplicate rows contain different values*, follow these steps to determine which of the rows is safe to remove. Continue with the next step only after you have carefully determined which row to remove:
 
     **FIXME:** This procedure only seems to apply if `relfilenode` is the column with differing values.  Is that the only column users need to look at in previous step?  If not, what would this procedure look like to check other columns?
 
     1. Record the significant system column values that *differ* in the output from the previous step. In the previous example, `relfilenode` differs and has the values 2703 and 2759.
+
+    2. 
+
+8. Before deleting any of the duplicate rows, make a backup copy of the data to a local file, using a command similar to:
+    ``` SQL
+    COPY (SELECT <duplicate_value>, * from <table_name>) TO '/tmp/<table_name>_<port>_<date>';
+    ```
+    For example:
+    ``` SQL
+    COPY (SELECT, oid, * from pg_class) to '/tmp/pg_class_40000_20180521';
+    ```
+
+9. Enable modification of the system tables:
+    ``` SQL
+    SET enable_system_table_mods=dml;
+    ```
+
+10. Use a transaction to delete teh selected `ctid` value, verifying that only a single row is left in the table. For example:
+
+    ``` SQL
+    BEGIN;
+    DELETE FROM pg_class WHERE ctid='(11,36)'
+    SELECT xmin, xmax, oid, * FROM pg_class WHERE relname = 'duplicate_table' AND relnamespace=2200; 
+    -- Commit only if the above query returns a single row.
+    REINDEX TABLE pg_class;
+    -- Commit only if re-indexing the table succeeds.
+    COMMIT;
+    ```
+
+    **Note:** If reindexing fails, or if the query returns multiple rows, repeat this procedure to delete the additional, duplicate rows.  You may need to attempt reindexing multiple times before the process succeeds and you can commit the deleted rows.

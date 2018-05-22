@@ -1,0 +1,18 @@
+---
+title: Fixing Extraneous Entries in Catalog Tables
+---
+
+Except for persistent tables, all Greenplum Database catalog tables should have same values on all segments. `gpcheckcat` displays an error message if there is an extraneous value in a catalog table on a segment. Follow this procedure to identify and then resolve extraneous catalog entries.
+
+## Prerequisites
+
+- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog. This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data.
+
+- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors or inconsistency errors *before* you follow this procedure. See [FIXME](fixme.html).
+
+- Perform a full backup of your database before you perform this procedure.
+
+## Procedure
+
+1. First determine whether your catalog problems are caused by a missing entry, or by a 
+

@@ -1,0 +1,73 @@
+---
+title: Fixing Missing Entries in Catalog Tables
+---
+
+Except for persistent tables, all Greenplum Database catalog tables should have same values on all segments. `gpcheckcat` displays an error message if an expected value is missing from a catalog table on a segment. Follow this procedure to identify and then resolve missing catalog entries.
+
+## Prerequisites
+
+- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog. This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data.
+
+- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors or inconsistency errors *before* you follow this procedure. See [FIXME](fixme.html).
+
+- Perform a full backup of your database before you perform this procedure.
+
+## Procedure
+
+1. Execute `gpcheckcat -R missing_extraneous <dbname>` and examine the output.
+
+2. Validate that your catalog contains one or more missing entries. For example, the following `gpcheckcat` output shows missing entries in the `pg_attributes` table:
+
+    ``` bash
+    20160706:14:05:25:019054 gpcheckcat:mdw:gpadmin-[INFO]:-[FAIL] Checking for missing or extraneous entries for pg_attribute
+    20160706:14:05:25:019054 gpcheckcat:mdw:gpadmin-[ERROR]:- pg_attribute has 9 issue(s)
+     attrelid | attname | exists | segids
+     90592940 | xmax | missing | {0}
+     90592940 | ctid | missing | {0}
+     90592940 | cmin | missing | {0}
+     90592940 | cmax | missing | {0}
+     90592940 | gp_segment_id | missing | {0}
+     90592940 | id | missing | {0}
+     90592940 | id1 | missing | {0}
+     90592940 | tableoid | missing | {0}
+     90592940 | xmin | missing | {0}
+    ```
+    **Note:** Missing entries can also be observed as "missing attribute(s)" errors that occur when you execute DDL or DML statements. For example:
+
+    ``` sql
+    gpadmin=# SELECT * FROM test ; 
+    ```
+    ``` sql
+    WARNING: cdbRelSize error (gathered 8 results from cmd 'select pg_relation_size('public.test2')')
+    DETAIL: catalog is missing 2 attribute(s) for relid 90592940 (relcache.c:961) (seg0 sdw1:46000 pid=20202)
+    ERROR: catalog is missing 2 attribute(s) for relid 90592940 (relcache.c:961) (seg0 slice1 sdw1:46000 pid=20202) (cdbdisp.c)
+    ```
+
+3. Record the `attrelid` of the problem entry from the `gpcheckcat` output (90592940 in the above example).
+
+4. Login to the Greenplum Database master segment as the `gpadmin` user.
+
+5. Reindex the affected table:
+
+    ``` sql
+    gpadmin=# REINDEX TABLE pg_attribute; 
+    ```
+
+6. Execute the following query to determine the table name associated with the `attrelid` you recorded in Step 3:
+
+    ``` sql
+    SELECT n.nspname||'.'||p.relname FROM <system_table> p, pg_namespace n WHERE p.relnamespace=n.oid and p.oid=<attrelid>;
+    ```
+
+    For example:
+    ``` sql
+    gpadmin=# SELECT n.nspname||'.'||p.relname FROM pg_class p ,pg_namespace n WHERE p.relnamespace=n.oid and p.oid=90592940 ;
+     ?column?
+    ---------------------
+     public.test
+    (1 row)
+    ```
+
+    If a table name is returned, you can use it for data access and/or backup the table data prior to resolving the catalog problem.
+
+7. 
