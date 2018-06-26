@@ -14,9 +14,7 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
 ## Procedure
 
-1. Execute `gpcheckcat -R missing_extraneous <dbname>` and examine the output.
-
-2. Validate that your catalog contains one or more missing entries. For example, the following `gpcheckcat` output shows missing entries in the `pg_attributes` table:
+1. Execute `gpcheckcat -R missing_extraneous <dbname>` and examine the output. Confirm that the output indicates one or more missing entries. For example, the following `gpcheckcat` output shows missing entries in the `pg_attributes` table:
 
     ``` bash
     20160706:14:05:25:019054 gpcheckcat:mdw:gpadmin-[INFO]:-[FAIL] Checking for missing or extraneous entries for pg_attribute
@@ -32,6 +30,8 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
      90592940 | tableoid | missing | {0}
      90592940 | xmin | missing | {0}
     ```
+    The above output shows a problem with missing entries for the `attrelid` value 90592940 on segment 0 (master).
+
     **Note:** Missing entries can also be observed as "missing attribute(s)" errors that occur when you execute DDL or DML statements. For example:
 
     ``` sql
@@ -43,11 +43,13 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
     ERROR: catalog is missing 2 attribute(s) for relid 90592940 (relcache.c:961) (seg0 slice1 sdw1:46000 pid=20202) (cdbdisp.c)
     ```
 
-3. Record the `attrelid` of the problem entry from the `gpcheckcat` output (90592940 in the above example).
+    The above error also shows missing entries for the `attrelid` value 90592940 on segment 0 (master).
+
+3. Record the `attrelid` of the problem entry from the `gpcheckcat` output (90592940 in the above example), as well as the `segids` value where the problem occurred.
 
 4. Login to the Greenplum Database master segment as the `gpadmin` user.
 
-5. Reindex the affected table:
+5. Reindex the affected table. For example:
 
     ``` sql
     gpadmin=# REINDEX TABLE pg_attribute; 
@@ -59,15 +61,61 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
     SELECT n.nspname||'.'||p.relname FROM <system_table> p, pg_namespace n WHERE p.relnamespace=n.oid and p.oid=<attrelid>;
     ```
 
-    For example:
+    For example, previous example output indicated that a problem with the `pg_attribute` table and `attrelid` 90592940:
     ``` sql
-    gpadmin=# SELECT n.nspname||'.'||p.relname FROM pg_class p ,pg_namespace n WHERE p.relnamespace=n.oid and p.oid=90592940 ;
+    gpadmin=# SELECT n.nspname||'.'||p.relname FROM pg_class p, pg_namespace n WHERE p.relnamespace=n.oid and p.oid=90592940 ;
      ?column?
     ---------------------
      public.test
     (1 row)
     ```
 
-    If a table name is returned, you can use it for data access and/or backup the table data prior to resolving the catalog problem.
+    If a table name is returned (`public.test` in the above example), then you can use the table for data access, or you can backup the table data prior to resolving the catalog problem.
 
-7. 
+7. Check the row count for the missing entry in the affected catalog on master and on all other segments to confirm that the problem exists in the segment that you recorded earlier (`segids` value 0, the master segment, in this example scenario):
+
+    1. First, use the following query to determine the expected row count for the entry:
+
+    ``` sql
+    SELECT count(*) FROM <system_table> WHERE attrelid=<attrelid>;
+    ```
+
+    For example:
+
+    ```
+    gpadmin=# SELECT count(*) from pg_attribute WHERE attrelid=90592940;
+     count
+    -------
+     38
+    (1 row)
+
+    2. Next, determine the row count present on all segments usin gthe query:
+
+    ``` sql
+    SELECT gp_segment_id, count(*) from gp_dist_random('<system_table>') WHERE attrelid=<attrelid>
+    ```
+
+    For example: 
+
+    ``` sql
+    gpadmin=# SELECT gp_segment_id,count(*) from gp_dist_random('pg_attribute') WHERE attrelid=90592940 GROUP BY 1 ; <<<<<gp_dis
+     gp_segment_id | count
+    ---------------+-------
+                 1 |    38
+    (1 row)
+    ```
+
+    In the above example, only segment 1 shows the expected row count.  Segment 0 (the master segment) is missing from the output, so segment 0 is confirmed as the problem segment.
+
+    **Note"** In some cases, the problem segment may appear in the output but show a count that is greater than or less than the expected count value.  
+
+Query the table and check if data is accessible . Also check if rows can be inserted:
+
+```
+COPY  public.test to '/dev/null' ;
+begin ;
+Insert into  public.test select * from public.test limit 10 ;
+rollback ;
+```
+
+If the error still showing up during data access and count validation then it is confirmed that entry is missing.
