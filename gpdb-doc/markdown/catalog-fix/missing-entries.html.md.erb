@@ -72,7 +72,7 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
     If a table name is returned (`public.test` in the above example), then you can use the table for data access, or you can backup the table data prior to resolving the catalog problem.
 
-7. Check the row count for the missing entry in the affected catalog on master and on all other segments to confirm that the problem exists in the segment that you recorded earlier (`segids` value 0, the master segment, in this example scenario):
+7. Check the row count for the missing entry on all segments to confirm that the problem exists on the segment that you recorded earlier (`segids` value 0, the master segment, in this example scenario):
 
     1. First, use the following query to determine the expected row count for the entry:
 
@@ -88,8 +88,9 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
     -------
      38
     (1 row)
+    ```
 
-    2. Next, determine the row count present on all segments usin gthe query:
+    2. Next, calculate and display the row count available on all segments with the query:
 
     ``` sql
     SELECT gp_segment_id, count(*) from gp_dist_random('<system_table>') WHERE attrelid=<attrelid>
@@ -107,15 +108,73 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
     In the above example, only segment 1 shows the expected row count.  Segment 0 (the master segment) is missing from the output, so segment 0 is confirmed as the problem segment.
 
-    **Note"** In some cases, the problem segment may appear in the output but show a count that is greater than or less than the expected count value.  
+    **Note"** In some cases, the problem segment may appear in the output but show a row count that is greater than or less than the expected count value.  
 
-Query the table and check if data is accessible . Also check if rows can be inserted:
+8. A second way to confirm the problem segment is to query and insert data on the affected table to see determine if the missing entry error occurs. Be sure to perform any inserts within a transaction that you roll back, so that you do not actually modify the table. For example:
 
-```
-COPY  public.test to '/dev/null' ;
-begin ;
-Insert into  public.test select * from public.test limit 10 ;
-rollback ;
-```
+    ```
+    COPY  public.test to '/dev/null' ;
+    begin ;
+    Insert into  public.test select * from public.test limit 10 ;
+    rollback ;
+    ```
 
-If the error still showing up during data access and count validation then it is confirmed that entry is missing.
+    If the error repeats during data access and count validation, then you have confirmed the entry is missing and it is safe to proceed with the fixes described in this procedure.
+
+9. Begin by taking a full backup of all catalog tables affected by the missing entry:
+
+    1. First, use the `\d+ <table_name>` command to determine whether the affected table has an OID column. For example:
+
+        ``` sql
+        gpadmin=# \d+ pg_class
+                           Table "pg_catalog.pg_class"
+             Column     |   Type    | Modifiers | Storage  | Description
+        ----------------+-----------+-----------+----------+-------------
+         relname        | name      | not null  | plain    |
+         relnamespace   | oid       | not null  | plain    |
+         .
+         .
+         relacl         | aclitem[] |           | extended |
+         reloptions     | text[]    |           | extended |
+        Indexes:
+            "pg_class_oid_index" UNIQUE, btree (oid)
+            "pg_class_relname_nsp_index" UNIQUE, btree (relname, relnamespace)
+        Has OIDs: yes        
+        ```
+
+        Look for the "Has OIDS" line in the output.
+
+    2. Connect using utility mode to the segment that exhibits the problem:
+    
+        ``` bash
+        $ PGOPTIONS='-c gp_session_role=utility' psql -h <hostname> -p <port> gpadmin
+        ```
+    
+    3. Backup the affected table. If the table has an OID column, use the command:
+
+        ``` sql
+        COPY (SELECT oid, * from <table_name>) to '/tmp/<table_name>_gpadmin_<port>_<date>';
+        ```
+
+        If the table does not have an OID column, use the command:
+
+        ``` sql
+        COPY <table_name> to '/tmp/<table_name>_gpadmin_<port>_<date>';
+        ```
+
+        Because the example table in this procedure has an OID column, the copy command would be similar to:
+
+        ``` sql
+        gpadmin=# COPY (SELECT oid, * from pg_class ) to '/tmp/pg_class_gpadmin_46000_20180627';
+        ```
+
+10. To correct entries that are missing from the catalog on a segment, you copy entries from a segment that contains all of entries for that catalog.
+
+        **FIXME:  commands were truncated and referenced the wrong system table.**
+
+        ``` sql 
+        gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46001 gpadmin -c "COPY (SELECT * FROM pg_attribute WHERE
+        COPY 38
+        gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "set       allow_system_table_mods=dml ; DELE
+        COPY
+        ```
