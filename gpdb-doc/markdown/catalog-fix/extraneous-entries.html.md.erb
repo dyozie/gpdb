@@ -14,5 +14,47 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
 ## Procedure
 
-1. First determine whether your catalog problems are caused by a missing entry, or by a 
+1. Execute `gpcheckcat -R missing_extraneous <dbname>` and examine the output. Confirm that the output indicates one or more extraneous entries. For example, the following `gpcheckcat` output shows extraneous entries in the `pg_attributes` table, indicated by the value `extra` in the `exists` column:
 
+    ``` bash
+    20160706:14:24:32:020381 gpcheckcat:mdw:gpadmin-[ERROR]:- pg_attribute has 8 issue(s)
+     attrelid | attname | exists | segids
+     90600133 | xmin | extra | {0}
+     90600133 | ctid | extra | {0}
+     90600133 | xmax | extra | {0}
+     90600133 | tableoid | extra | {0}
+     90600133 | cmax | extra | {0}
+     90600133 | gp_segment_id | extra | {0}
+     90600133 | id | extra | {0}
+     90600133 | cmin | extra | {0}
+    20160706:14:24:33:020381 gpcheckcat:mdw:gpadmin-[ERROR]:- pg_class has 1 issue(s)
+     oid | exists | segids
+     90600133 | extra | {0}
+    ```
+    The above output shows a problem with extra entries for the `attrelid` value 90600133 on segment 0 (master).
+
+    **Note:** Extraneous entries can also be observed as "relation already exists" errors that occur when you execute DDL or DML statements. For example:
+
+    ``` sql
+    gpadmin=# SCREATE TABLE test1 (id int) DISTRIBUTED BY (id) ;
+    ```
+    ``` sql
+    ERROR: relation "test1" already exists (seg0 sdw1:46000 pid=11415)
+    ```
+
+2. Record the `attrelid` of the problem entry from the `gpcheckcat` output (90600133 in the above example), as well as the `segids` value where the problem occurred.
+
+3. Login to the Greenplum Database master segment as the `gpadmin` user.
+
+4. Reindex the affected table. For example:
+
+    ``` sql
+    gpadmin=# REINDEX TABLE pg_attribute; 
+    ```
+
+
+gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "SELECT n.nspname||'.'||p.relname FROM p
+ ?column?
+---------------------
+ public.test1
+(1 row)

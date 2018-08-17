@@ -14,7 +14,7 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
 ## Procedure
 
-1. Execute `gpcheckcat -R missing_extraneous <dbname>` and examine the output. Confirm that the output indicates one or more missing entries. For example, the following `gpcheckcat` output shows missing entries in the `pg_attributes` table:
+1. Execute `gpcheckcat -R missing_extraneous <dbname>` and examine the output. Confirm that the output indicates one or more missing entries. For example, the following `gpcheckcat` output shows missing entries in the `pg_attributes` table, indicated by the value `missing` in the `exists` column:
 
     ``` bash
     20160706:14:05:25:019054 gpcheckcat:mdw:gpadmin-[INFO]:-[FAIL] Checking for missing or extraneous entries for pg_attribute
