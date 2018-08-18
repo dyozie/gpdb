@@ -1,0 +1,27 @@
+---
+title: Fixing Dependency Errors in Catalog Tables
+---
+
+`gpcheckcat` output can sometimes report dependency-related errors. The most typical type of dependency error involves orphaned entries in the catalog tables `pg_depend` or `pg_shdepend`. Often, `gpcheckcat` output (including verbose output) provides no information about the orphaned entries that need to be removed in order to to address dependency errors. Follow the steps in this procedure to dependency-related errors.
+
+## Prerequisites
+
+- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog. This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data.
+
+- Use `gpcheckcat` to verify that your system catalog contains duplicate entries. See [Resolving System Catalog Issues](resolve-catalog-issues.html) for a list of common symptoms.
+
+- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors, inconsistency errors, missing entry errors, or extraneous entry errors *before* you follow this procedure. See [FIXME](fixme.html).
+
+- Perform a full backup of your database before you perform this procedure.
+
+## Procedure
+
+1. First, execute a verbose `gpcheckcat` command to check only dependency-related issues:
+
+    ``` bash
+    $ gpcheckcat -v -R dependency  -p <port> template1
+    ```
+
+2. For dependency-related errors, `gpcheckcat` generates a verification file with the `.sql` extension to provide further information. The file is created in the `/home/gpadmin/gpAdminLogs` directory. Execute the verification file and save the output.
+
+3. As an alternative to running the verification file (or if no verification file is created), execute this [dep.sql](dep.sql) file.

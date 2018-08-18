@@ -150,19 +150,19 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
         $ PGOPTIONS='-c gp_session_role=utility' psql -h <hostname> -p <port> gpadmin
         ```
     
-    3. Backup the affected table. If the table has an OID column, use the command:
+    3. Backup the affected catalog table. If the table has an OID column, use the command:
 
         ``` sql
         COPY (SELECT oid, * from <table_name>) to '/tmp/<table_name>_gpadmin_<port>_<date>';
         ```
 
-        If the table does not have an OID column, use the command:
+        If the catalog table does not have an OID column, use the command:
 
         ``` sql
         COPY <table_name> to '/tmp/<table_name>_gpadmin_<port>_<date>';
         ```
 
-        Because the example table in this procedure has an OID column, the copy command would be similar to:
+        Because the example catalog in this procedure has an OID column, the copy command would be similar to:
 
         ``` sql
         gpadmin=# COPY (SELECT oid, * from pg_class ) to '/tmp/pg_class_gpadmin_46000_20180627';

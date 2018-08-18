@@ -46,15 +46,109 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
 3. Login to the Greenplum Database master segment as the `gpadmin` user.
 
-4. Reindex the affected table. For example:
+4. Reindex the affected catalog table (`pg_attribute` in the current example):
 
     ``` sql
     gpadmin=# REINDEX TABLE pg_attribute; 
     ```
 
+5. As the `gpadmin` user, connect to the affected segment in utility mode and execute a query to determine or verify the table that contains the extraneous entries:
 
-gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "SELECT n.nspname||'.'||p.relname FROM p
- ?column?
----------------------
- public.test1
-(1 row)
+    ``` bash
+    $ PGOPTIONS='-c gp_session_role=utility' psql -h <segment_host> -p <segment_port> gpadmin -c "SELECT n.nspname||'.'||p.relname FROM p
+    ```
+    ``` sql
+     ?column?
+    ---------------------
+     public.test1
+    (1 row)
+    ```
+
+    Substitute the `<segment_host>`, `<segment_port>` for your system.
+    
+    <br/><br/>The sample output above confirms that the `public.test1` table is affected.
+
+6. Check the count of the table on the current segment to see if the data is accessible:
+
+    ``` bash
+    $ PGOPTIONS='-c gp_session_role=utility' psql -h <segment_host> -p <segment_port> gpadmin -c "SELECT count(*) FROM <table_name>"
+    ```
+
+    Substitute the `<segment_host>`, `<segment_port>` for your system, and `<table_name>` for the affected table. For example:
+
+    ``` bash
+    $ PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "SELECT count(*) FROM public.test1"
+    ```
+    ``` sql
+     count
+    -------
+     453
+    (1 row)
+    ```
+
+7. Execute the same query to determine the count of the table on the master segment. Because the table was reindexed, a failure to obtain rows on master confirms that the segment contains the extra rows.  For example:
+
+    ``` bash
+    $  SELECT count(*) FROM public.test1;
+    ```
+    ``` sql
+    ERROR: relation "public.test1" does not exist
+    LINE 1: SELECT count(*) FROM public.test1;
+    ```
+
+    Here, the fact that the table does not exist on master indicates that the extra rows on the affected segment need to be corrected.
+
+8. Begin by taking a full backup of all catalog tables affected by the missing entry:
+
+    1. First, use the `\d+ <table_name>` command to determine whether the affected table has an OID column. For example:
+
+        ``` sql
+        gpadmin=# \d+ pg_attribute
+         Table "pg_catalog.pg_attribute"
+         Column | Type | Modifiers | Storage | Description
+        ---------------+----------+-----------+---------+-------------
+         attrelid | oid | not null | plain |
+         attname | name | not null | plain |
+        .
+        .
+         attinhcount | integer | not null | plain |
+        Indexes:
+         "pg_attribute_relid_attnam_index" UNIQUE, btree (attrelid, attname)
+         "pg_attribute_relid_attnum_index" UNIQUE, btree (attrelid, attnum)
+        Has OIDs: no
+        
+        ```
+
+        Look for the "Has OIDS" line in the output.
+
+    2. Connect using utility mode to the segment that exhibits the problem:
+    
+        ``` bash
+        $ PGOPTIONS='-c gp_session_role=utility' psql -h <hostname> -p <port> gpadmin
+        ```
+    
+    3. Backup the affected catalog table. If the table has an OID column, use the command:
+
+        ``` sql
+        COPY (SELECT oid, * from <table_name>) to '/tmp/<table_name>_gpadmin_<port>_<date>';
+        ```
+
+        If the catalog table does not have an OID column, use the command:
+
+        ``` sql
+        COPY <table_name> to '/tmp/<table_name>_gpadmin_<port>_<date>';
+        ```
+
+        Because the example catalog in this procedure has no OID column, the copy command would be similar to:
+
+        ``` sql
+        gpadmin=# COPY pg_attribute to '/tmp/pg_class_gpadmin_46000_20180627';
+        ```
+
+10. To correct extra entries:
+
+    **FIXME: need gpmt alternative**
+
+    ``` bash
+    $ gpmt gpcheckcat -pgclass_extra
+    ```
