@@ -1,0 +1,20 @@
+---
+title: Fixing Inconsistencies with Persistent Tables
+---
+
+`gpcheckcat` output can sometimes report inconsistencies with Greenplum persistent tables. These errors indicate a problem with the state of persistent objects and/or file system objects on a segment. For example, an object might be considered in a "creation incomplete" state even though all transactions have completed. At the file system level, a file might exist in a database directory without having a corresponding object in the database's system tables. Follow this procedure to rebuild persistent tables in order to resolve these errors.
+
+## Prerequisites
+
+- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog. This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data.
+
+- This procedure is only compatible with Greenplum Database versions 4.3.10 and later, and versions 5.0.0 and later. 
+
+- Use `gpcheckcat` to verify that your system catalog contains persistent table errors. See [Resolving System Catalog Issues](resolve-catalog-issues.html) for a list of common symptoms.
+
+- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors, inconsistency errors, missing entry errors, extraneous entry errors, or dependency-related errors *before* you follow this procedure. See [FIXME](fixme.html).
+
+- Perform a full backup of your database before you perform this procedure.
+
+## Procedure
+
