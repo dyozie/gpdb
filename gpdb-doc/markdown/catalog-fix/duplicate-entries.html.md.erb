@@ -6,9 +6,11 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
 
 ## Prerequisites
 
-- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog. This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data.
+- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog.
 
-- Use `gpcheckcat` to verify that your system catalog contains duplicate entries. See [Resolving System Catalog Issues](resolve-catalog-issues.html) for a list of common symptoms.
+    <div class="note warning">This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data. <br/><br/>Changes to Pivotal Greenplum Database system catalog tables or views are not supported.</div>
+
+- Use `gpcheckcat` to verify that your system catalog contains duplicate entries. See [Fixing Problems with Greenplum System Catalogs](process.html) for a list of common symptoms.
 
 - Perform a full backup of your database before you perform this procedure.
 

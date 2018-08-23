@@ -1,0 +1,65 @@
+---
+title: Fixing Problems with Greenplum System Catalogs
+---
+
+<div class="note warning">The procedures described in this topic are intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data. <br/><br/>Changes to Pivotal Greenplum Database system catalog tables or views are not supported. If you are using Pivotal Greenplum Database, always contact Pivotal Support to resolve any problems discovered with the system catalog.</div>
+
+The Greenplum System Catalog is a collection of tables and views, having names prefixed with `gp_` or `pg_`, that store critical information about database objects on all segments of the Greenplum cluster. Consistent system catalog data is essential to the proper functioning of any database system.
+
+For a Greenplum deployment, the `gpcheckcat` utility provides the main interface for validating the consistency of the Greenplum System Catalog. All administrators should incorporate a regular, full run of `gpcheckcat` as part of a regular maintenance routine.  See [Recommended Monitoring and Maintenance Tasks](../admin_guide/monitoring/monitoring.html) for more information.
+
+If `gpcheckcat` indicates problems in the system catalog, your first course of action should be to contact Pivotal Support to resolve the issue. If you are using the open source build of Greenplum, or if you cannot allow Pivotal Support to access your systems or data, then the procedures described below highlight the process for fixing most common system catalog problems.
+
+## Process
+
+Although it is rare to encounter problems with the system catalog, when problems do occur there may be several different types of error.  It is crucial to address catalog errors in the order described below. Examine your `gpcheckcat` error messages, and address any observed errors in the order described below.
+
+Also, after addressing any one category of error described below, re-run `gpcheckcat` and examine the new output. Fixing one category of error can sometimes have a cascading effect, and can resolve other categories of error that would be addressed later in the process.
+
+1. [Remove duplicate entries present in the system catalog.](duplicate-entries.html) Duplicate entry errors can appear in `gpcheckcat` output, during `REINDEX` operations, or as part of a transaction error. For example:
+
+    ``` sql
+    =# reindex table pg_class ;
+    ERROR: could not create unique index (seg8 sdw2.gphd.local:1025 pid=506718)
+    DETAIL: Table contains duplicate values.
+    ```
+2. [Fix missing entries](missing-entries.html), or [remove extraneous entries](extraneous-entries.html) that appear in catalog tables. Missing entries appear with the status "missing" in the `gpcheckcat` summary:
+
+    ``` bash
+    20160706:14:05:25:019054 gpcheckcat:mdw:gpadmin-[INFO]:-[FAIL] Checking for missing or extraneous entries for pg_attribute
+    20160706:14:05:25:019054 gpcheckcat:mdw:gpadmin-[ERROR]:- pg_attribute has 9 issue(s)
+     attrelid | attname | exists | segids
+     90592940 | xmax | missing | {0}
+     90592940 | ctid | missing | {0}
+     90592940 | cmin | missing | {0}
+     90592940 | cmax | missing | {0}
+     90592940 | gp_segment_id | missing | {0}
+     90592940 | id | missing | {0}
+     90592940 | id1 | missing | {0}
+     90592940 | tableoid | missing | {0}
+     90592940 | xmin | missing | {0}
+    ```
+
+    Extra entries include the status "extra":
+
+    ``` bash
+    20160706:14:24:32:020381 gpcheckcat:mdw:gpadmin-[ERROR]:- pg_attribute has 8 issue(s)
+     attrelid | attname | exists | segids
+     90600133 | xmin | extra | {0}
+     90600133 | ctid | extra | {0}
+     90600133 | xmax | extra | {0}
+     90600133 | tableoid | extra | {0}
+     90600133 | cmax | extra | {0}
+     90600133 | gp_segment_id | extra | {0}
+     90600133 | id | extra | {0}
+     90600133 | cmin | extra | {0}
+    20160706:14:24:33:020381 gpcheckcat:mdw:gpadmin-[ERROR]:- pg_class has 1 issue(s)
+     oid | exists | segids
+     90600133 | extra | {0}
+    ```
+
+3. Foreign key issues that appear in `gpcheckcat` output are generally resolved using the previous methods. If your output indicates problems with foreign keys, first complete steps 1-2 to address duplicate, missing, and extraneous entries in the catalog, and then re-run `gpcheckcat`.
+
+4. [Fix dependency-related errors](dependency-errors) that appear in `gpchceckcat` output.
+
+5. [Address any inconsistency errors reported for persistent tables in the catalog](dependency-errors.html).

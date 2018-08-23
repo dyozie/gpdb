@@ -6,7 +6,9 @@ title: Fixing Dependency Errors in Catalog Tables
 
 ## Prerequisites
 
-- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog. This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data.
+- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog.
+
+    <div class="note warning">This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data. <br/><br/>Changes to Pivotal Greenplum Database system catalog tables or views are not supported.</div>
 
 - Use `gpcheckcat` to verify that your system catalog contains dependency errors. See [Resolving System Catalog Issues](resolve-catalog-issues.html) for a list of common symptoms.
 
@@ -24,12 +26,15 @@ title: Fixing Dependency Errors in Catalog Tables
 
 2. Examine the `gpcheckcat` output to determine which segment(s) are affected by dependency-related issues.  Record a list of these segments.
 
-2. For dependency-related errors, `gpcheckcat` generates a verification file with the `.sql` extension to provide further information. The file is created in the `/home/gpadmin/gpAdminLogs` directory. Execute the verification file on each affected segment, and save the output.
+2. For dependency-related errors, `gpcheckcat` generates a verification file with the `.sql` extension to provide further information. The file is created in the `/home/gpadmin/gpAdminLogs` directory. 
+
+    <br/><br/>Execute the verification file on each affected segment, and save the output.
 
 3. As an alternative to running the verification file (or if no verification file is created), execute this [dep.sql](dep.sql) file on each affected segment, and save the output. For example:
 
     ``` bash
     $ PGOPTIONS='-c gp_session_role=utility' psql  -h <segment_host> -p <segment_port>  <dbname> -f dep.sql > dep.out
+    ```
 
 4. Look through the verification file output and/or the `dep.sql` file output to determine the list of orphaned entries. This is the list of entries you will first back up and then remove.
 
@@ -69,4 +74,8 @@ title: Fixing Dependency Errors in Catalog Tables
 
 6. Repeat Step 3 to determine if any orphaned entries still remain on affected segments. If additional records are returned, repeat the procedure in Step 5 to backup and remove the entries.
 
-7. After the `dep.sql` output shows no records returned, re-run `gpcheckcat` to validate that dependency issues were resolved in the Greenplum cluster as a whole.
+7. After the `dep.sql` output shows no records returned, re-run `gpcheckcat` to validate that dependency issues were resolved in the Greenplum cluster as a whole:
+
+    ``` bash
+    $ gpcheckcat -R dependency
+    ```

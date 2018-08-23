@@ -2,13 +2,15 @@
 title: Fixing Inconsistencies with Persistent Tables
 ---
 
-`gpcheckcat` output can sometimes report inconsistencies with Greenplum persistent tables. These errors indicate a problem with the state of persistent objects and/or file system objects on a segment. For example, an object might be considered in a "creation incomplete" state even though all transactions have completed. At the file system level, a file might exist in a database directory without having a corresponding object in the database's system tables. Follow this procedure to rebuild persistent tables in order to resolve these errors.
+`gpcheckcat` output can sometimes report inconsistencies with Greenplum persistent tables. These errors indicate a problem with the state of persistent database objects or file system objects on a segment. For example, a database object might be considered in a "creation incomplete" state even though all transactions have completed. At the file system level, a file might exist in a database directory without having a corresponding object in the database's system tables. Follow this procedure to rebuild persistent tables in order to resolve these errors.
 
 ## Prerequisites
 
-- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog. This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data.
+- If you are using Pivotal Greenplum Database, contact Pivotal Support to resolve any problems discovered with the system catalog. 
 
-- This procedure is only compatible with Greenplum Database versions 4.3.10 and later, and versions 5.0.0 and later. 
+    <div class="note warning">This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data. <br/><br/>Changes to Pivotal Greenplum Database system catalog tables or views are not supported.</div>
+
+- This procedure is compatible only with Greenplum Database versions 4.3.10 and later, and versions 5.0.0 and later. 
 
 - Use `gpcheckcat` to verify that your system catalog contains persistent table errors. See [Resolving System Catalog Issues](resolve-catalog-issues.html) for a list of common symptoms.
 
@@ -18,3 +20,72 @@ title: Fixing Inconsistencies with Persistent Tables
 
 ## Procedure
 
+1. Examine the `gpcheckcat` output to obtain a list of the Greenplum segments that are affected by persistent table issues. Record the content ID of each affected segment.
+
+2. On the master host, create a text file that contains the content IDs of each affected segment, with one content ID per line.  For example, a sample file, `gpcontentids.txt`, that lists the first two segments of the cluster would contain:
+
+    ``` pre
+    0
+    1
+    ```
+
+    Add the content IDs of the segment(s) indicated by the `gpcheckcat` output. If you need to determine the content ID of a particular host, query the `content` column in `gp_segment_configuration`. For example:
+
+    ``` sql
+    =# select hostname, address, content from gp_segment_configuration;
+    ```
+
+    Note that -1 always indicates the master segment.
+
+3. Restrict access to the Greenplum cluster so that only the `gpadmin` user can connect:
+
+    1. Backup the `pg_hba.conf` file for your cluster.
+    2. Edit `pg_hba.conf` to limit access to the `gpadmin` user for the postgres and template1 databases. A minimal `pg_hba.conf` file that allows `gpadmin` access from localhost would contain:
+
+        ``` pre
+        host    postgres          gpadmin         127.0.0.1/32 trust
+        host    template1         gpadmin         127.0.0.1/32 trust
+        host    replication       gpadmin         0.0.0.0/0 trust
+        host    all               gpadmin         ::1/128 trust 
+        ```
+    3. Start the Greenplum cluster in restricted mode:
+
+        ``` bash
+        $ gpstart -R
+        ```
+
+        **Note:** The `-R` option allows only database superusers to connect. However, the previous `pg_hba.conf` changes further restrict access to `gpadmin` only, and only to the required postgres and template1 databases.
+
+6. Login to the master host as the `gpadmin` user and set your environment:
+
+7. Ensure that the `MASTER_DATA_DIRECTORY`, `PGPORT`, and `PGDATABASE` variables are set in your environment; the `gppersistentrebuild` utility does not provide options to specify these values. You can set `PGDATABASE` to any existing database. For example:
+
+    ``` bash
+    $ export MASTER_DATA_DIRECTORY=/gpmaster/gpsne-1
+    $ export PGPORT=5432
+    $ export PGDATABASE=postgres
+    ```
+
+8. Execute the `gppersistentrebuild` utility to first back up and then rebuild persistent tables. Substitute the path to the file that contains the content IDs for your system. For example:
+
+    ``` bash
+    $ gppersistentrebuild --contentid-file=./contentids.txt 
+    ```
+
+    You will need to confirm and then re-confirm your decision to run the utility. `gppersistentrebuild` begins by validating that each segment identified in the contend ID file exists. It then performs these steps:
+
+    - It backs up all files that will be overwritten during the rebuild process.  All backup files are placed in subdirectories of `$MASTER_DATA_DIRECTORY/global` that have the directory name format `pg_files_bk_<timestamp>`.
+    - It uses the system functions `gp_persistent_reset_all()` and `gp_persistent_build_all()` to rebuild all persistent tables.
+    - If a rebuild operation fails for a segment, the utility restores the backup for that segment and resets the transaction log.
+
+    Note that the backup directories remain even after a successful rebuild operation.
+
+9. After `gppersistentrebuild` completes, re-run `gpcheckcat` to validate that persistent table errors have been resolved:
+
+    ``` bash
+    $ gpcheckcat -R persistent
+    ```
+
+10. Shut down your cluster, and restore the original `pg_hba.conf` file.
+
+11. Start your cluster with normal client access.
