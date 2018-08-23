@@ -16,6 +16,21 @@ Although it is rare to encounter problems with the system catalog, when problems
 
 Also, after addressing any one category of error described below, re-run `gpcheckcat` and examine the new output. Fixing one category of error can sometimes have a cascading effect, and can resolve other categories of error that would be addressed later in the process.
 
+<img src="process.png" usemap="#image-map">
+
+<map name="image-map">
+    <area target="" alt="Fix Duplicate Entries" title="Fix Duplicate Entries" href="duplicate-entries.html" coords="585,149,338,32" shape="rect">
+    <area target="" alt="Fix Missing Entries" title="Fix Missing Entries" href="missing-entries.html" coords="203,177,439,290" shape="rect">
+    <area target="" alt="Fix Foreign Key Errors" title="Fix Foreign Key Errors" href="#foreign-key" coords="358,320,672,425" shape="rect">
+    <area target="" alt="Fix Dependency Errors" title="Fix Dependency Errors" href="dependency-errors.html" coords="358,462,566,565" shape="rect">
+    <area target="" alt="Fix Persistent Table Inconsistencies" title="Fix Persistent Table Inconsistencies" href="persistent-tables.html" coords="359,605,564,704" shape="rect">
+    <area target="" alt="Step 1" title="Step 1" href="#step1" coords="124,92,24" shape="circle">
+    <area target="" alt="Step 2" title="Step 2" href="#step2" coords="124,231,25" shape="circle">
+    <area target="" alt="Step 3" title="Step 3" href="#step3" coords="124,375,22" shape="circle">
+    <area target="" alt="Step 4" title="Step 4" href="#step4" coords="123,515,26" shape="circle">
+    <area target="" alt="Step 5" title="Step 5" href="#step5" coords="124,657,25" shape="circle">
+</map>
+
 1. [Remove duplicate entries present in the system catalog.](duplicate-entries.html) Duplicate entry errors can appear in `gpcheckcat` output, during `REINDEX` operations, or as part of a transaction error. For example:
 
     ``` sql
@@ -62,4 +77,4 @@ Also, after addressing any one category of error described below, re-run `gpchec
 
 4. [Fix dependency-related errors](dependency-errors) that appear in `gpchceckcat` output.
 
-5. [Address any inconsistency errors reported for persistent tables in the catalog](dependency-errors.html).
+5. [Address any inconsistency errors reported for persistent tables](dependency-errors.html).
