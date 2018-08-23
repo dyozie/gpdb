@@ -1,5 +1,5 @@
 ---
-title: Fixing Missing Entries in Catalog Tables
+title: Restoring Missing Entries
 ---
 
 Except for persistent tables, all Greenplum Database catalog tables should have same values on all segments. `gpcheckcat` displays an error message if an expected value is missing from a catalog table on a segment. Follow this procedure to identify and then resolve missing catalog entries.
@@ -10,7 +10,7 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
     <div class="note warning">This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data. <br/><br/>Changes to Pivotal Greenplum Database system catalog tables or views are not supported.</div>
 
-- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors or inconsistency errors *before* you follow this procedure. See [FIXME](fixme.html).
+- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors or inconsistency errors *before* you follow this procedure. See [Fixing Problems with Greenplum System Catalogs](process.html).
 
 - Perform a full backup of your database before you perform this procedure.
 
@@ -60,12 +60,15 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 6. Execute the following query to determine the table name associated with the `attrelid` you recorded in Step 3:
 
     ``` sql
-    SELECT n.nspname||'.'||p.relname FROM <system_table> p, pg_namespace n WHERE p.relnamespace=n.oid and p.oid=<attrelid>;
+    gpadmin=# SELECT n.nspname||'.'||p.relname FROM <system_table> p, pg_namespace n WHERE p.relnamespace=n.oid and p.oid=<attrelid>;
     ```
 
     For example, previous example output indicated that a problem with the `pg_attribute` table and `attrelid` 90592940:
+
     ``` sql
     gpadmin=# SELECT n.nspname||'.'||p.relname FROM pg_class p, pg_namespace n WHERE p.relnamespace=n.oid and p.oid=90592940 ;
+    ```
+    ``` sql
      ?column?
     ---------------------
      public.test
@@ -78,44 +81,48 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
     1. First, use the following query to determine the expected row count for the entry:
 
-    ``` sql
-    SELECT count(*) FROM <system_table> WHERE attrelid=<attrelid>;
-    ```
+        ``` sql
+        gpadmin=# SELECT count(*) FROM <system_table> WHERE attrelid=<attrelid>;
+        ```
 
-    For example:
+        For example:
 
-    ```
-    gpadmin=# SELECT count(*) from pg_attribute WHERE attrelid=90592940;
-     count
-    -------
-     38
-    (1 row)
-    ```
+        ``` sql
+        gpadmin=# SELECT count(*) from pg_attribute WHERE attrelid=90592940;
+        ```
+        ``` sql
+         count
+        -------
+         38
+        (1 row)
+        ```
 
     2. Next, calculate and display the row count available on all segments with the query:
 
-    ``` sql
-    SELECT gp_segment_id, count(*) from gp_dist_random('<system_table>') WHERE attrelid=<attrelid>
-    ```
+        ``` sql
+        gpadmin=# SELECT gp_segment_id, count(*) from gp_dist_random('<system_table>') WHERE attrelid=<attrelid>;
+        ```
 
-    For example: 
+        For example: 
 
-    ``` sql
-    gpadmin=# SELECT gp_segment_id,count(*) from gp_dist_random('pg_attribute') WHERE attrelid=90592940 GROUP BY 1 ; <<<<<gp_dis
-     gp_segment_id | count
-    ---------------+-------
-                 1 |    38
-    (1 row)
-    ```
+        ``` sql
+        gpadmin=# SELECT gp_segment_id,count(*) from gp_dist_random('pg_attribute') WHERE attrelid=90592940 GROUP BY 1;
+        ```
+        ``` sql
+         gp_segment_id | count
+        ---------------+-------
+                     1 |    38
+        (1 row)
+        ```
 
-    In the above example, only segment 1 shows the expected row count.  Segment 0 (the master segment) is missing from the output, so segment 0 is confirmed as the problem segment.
+        In the above example, only segment 1 shows the expected row count.  Segment 0 (the master segment) is missing from the output, so segment 0 is confirmed as the problem segment.
 
-    **Note"** In some cases, the problem segment may appear in the output but show a row count that is greater than or less than the expected count value.  
+        <br/>**Note** In some cases, the problem segment may appear in the output but show a row count that is greater than or less than the expected count value.  
 
 8. A second way to confirm the problem segment is to query and insert data on the affected table to see determine if the missing entry error occurs. Be sure to perform any inserts within a transaction that you roll back, so that you do not actually modify the table. For example:
 
-    ```
-    COPY  public.test to '/dev/null' ;
+    ``` sql
+    gpadmin=# COPY  public.test to '/dev/null' ;
     begin ;
     Insert into  public.test select * from public.test limit 10 ;
     rollback ;
@@ -129,6 +136,8 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
         ``` sql
         gpadmin=# \d+ pg_class
+        ```
+        ``` sql
                            Table "pg_catalog.pg_class"
              Column     |   Type    | Modifiers | Storage  | Description
         ----------------+-----------+-----------+----------+-------------
@@ -144,7 +153,7 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
         Has OIDs: yes        
         ```
 
-        Look for the "Has OIDS" line in the output.
+        Look for the `Has OIDS` line in the output.
 
     2. Connect using utility mode to the segment that exhibits the problem:
     
@@ -155,13 +164,13 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
     3. Backup the affected catalog table. If the table has an OID column, use the command:
 
         ``` sql
-        COPY (SELECT oid, * from <table_name>) to '/tmp/<table_name>_gpadmin_<port>_<date>';
+        gpadmin=# COPY (SELECT oid, * from <table_name>) to '/tmp/<table_name>_gpadmin_<port>_<date>';
         ```
 
         If the catalog table does not have an OID column, use the command:
 
         ``` sql
-        COPY <table_name> to '/tmp/<table_name>_gpadmin_<port>_<date>';
+        gpadmin=# COPY <table_name> to '/tmp/<table_name>_gpadmin_<port>_<date>';
         ```
 
         Because the example catalog in this procedure has an OID column, the copy command would be similar to:
@@ -172,11 +181,11 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
 10. To correct entries that are missing from the catalog on a segment, you copy entries from a segment that contains all of entries for that catalog.
 
-        **FIXME:  commands were truncated and referenced the wrong system table.**
+       <br/>**FIXME:  commands were truncated and referenced the wrong system table.**
 
-        ``` sql 
-        gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46001 gpadmin -c "COPY (SELECT * FROM pg_attribute WHERE
-        COPY 38
-        gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "set       allow_system_table_mods=dml ; DELE
-        COPY
-        ```
+       ``` sql 
+       gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46001 gpadmin -c "COPY (SELECT * FROM pg_attribute WHERE
+       COPY 38
+       gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "set       allow_system_table_mods=dml ; DELE
+       COPY
+       ```

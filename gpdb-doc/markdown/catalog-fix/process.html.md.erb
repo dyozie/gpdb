@@ -19,26 +19,26 @@ Also, after addressing any one category of error described below, re-run `gpchec
 <img src="process.png" usemap="#image-map">
 
 <map name="image-map">
-    <area target="" alt="Fix Duplicate Entries" title="Fix Duplicate Entries" href="duplicate-entries.html" coords="585,149,338,32" shape="rect">
-    <area target="" alt="Fix Missing Entries" title="Fix Missing Entries" href="missing-entries.html" coords="203,177,439,290" shape="rect">
-    <area target="" alt="Fix Foreign Key Errors" title="Fix Foreign Key Errors" href="#foreign-key" coords="358,320,672,425" shape="rect">
-    <area target="" alt="Fix Dependency Errors" title="Fix Dependency Errors" href="dependency-errors.html" coords="358,462,566,565" shape="rect">
-    <area target="" alt="Fix Persistent Table Inconsistencies" title="Fix Persistent Table Inconsistencies" href="persistent-tables.html" coords="359,605,564,704" shape="rect">
-    <area target="" alt="Step 1" title="Step 1" href="#step1" coords="124,92,24" shape="circle">
-    <area target="" alt="Step 2" title="Step 2" href="#step2" coords="124,231,25" shape="circle">
-    <area target="" alt="Step 3" title="Step 3" href="#step3" coords="124,375,22" shape="circle">
-    <area target="" alt="Step 4" title="Step 4" href="#step4" coords="123,515,26" shape="circle">
-    <area target="" alt="Step 5" title="Step 5" href="#step5" coords="124,657,25" shape="circle">
+    <area target="" alt="" title="" href="duplicate-entries.html" coords="167,15,593,117" shape="rect">
+    <area target="" alt="" title="" href="missing-entries.html" coords="129,130,313,211" shape="rect">
+    <area target="" alt="" title="" href="extraneous-entries.html" coords="323,133,592,211" shape="rect">
+    <area target="" alt="" title="" href="#step3" coords="52,226,592,309" shape="rect">
+    <area target="" alt="" title="" href="dependency-errors.html" coords="123,324,592,407" shape="rect">
+    <area target="" alt="" title="" href="persistent-tables.html" coords="123,420,592,502" shape="rect">
+    <area target="" alt="" title="" href="#step1" coords="53,44,114,100" shape="rect">
+    <area target="" alt="" title="" href="#step2" coords="108,200,54,144" shape="rect">
+    <area target="" alt="" title="" href="#step4" coords="57,343,108,387" shape="rect">
+    <area target="" alt="" title="" href="#step5" coords="59,438,105,488" shape="rect">
 </map>
 
-1. [Remove duplicate entries present in the system catalog.](duplicate-entries.html) Duplicate entry errors can appear in `gpcheckcat` output, during `REINDEX` operations, or as part of a transaction error. For example:
+1. <a id="step1"></a>[Remove duplicate entries present in the system catalog.](duplicate-entries.html) Duplicate entry errors can appear in `gpcheckcat` output, during `REINDEX` operations, or as part of a transaction error. For example:
 
     ``` sql
     =# reindex table pg_class ;
     ERROR: could not create unique index (seg8 sdw2.gphd.local:1025 pid=506718)
     DETAIL: Table contains duplicate values.
     ```
-2. [Fix missing entries](missing-entries.html), or [remove extraneous entries](extraneous-entries.html) that appear in catalog tables. Missing entries appear with the status "missing" in the `gpcheckcat` summary:
+2. <a id="step2"></a>[Fix missing entries](missing-entries.html), or [remove extraneous entries](extraneous-entries.html) that appear in catalog tables. Missing entries appear with the status "missing" in the `gpcheckcat` summary:
 
     ``` bash
     20160706:14:05:25:019054 gpcheckcat:mdw:gpadmin-[INFO]:-[FAIL] Checking for missing or extraneous entries for pg_attribute
@@ -73,8 +73,8 @@ Also, after addressing any one category of error described below, re-run `gpchec
      90600133 | extra | {0}
     ```
 
-3. Foreign key issues that appear in `gpcheckcat` output are generally resolved using the previous methods. If your output indicates problems with foreign keys, first complete steps 1-2 to address duplicate, missing, and extraneous entries in the catalog, and then re-run `gpcheckcat`.
+3. <a id="step3"></a>Foreign key issues that appear in `gpcheckcat` output are generally resolved using the previous methods. If your output indicates problems with foreign keys, first complete steps 1-2 to address duplicate, missing, and extraneous entries in the catalog, and then re-run `gpcheckcat`.
 
-4. [Fix dependency-related errors](dependency-errors) that appear in `gpchceckcat` output.
+4. <a id="step4"></a>[Fix dependency-related errors](dependency-errors.html) that appear in `gpchceckcat` output.
 
-5. [Address any inconsistency errors reported for persistent tables](dependency-errors.html).
+5. <a id="step5"></a>[Address any inconsistency errors reported for persistent tables](persistent-tables.html).

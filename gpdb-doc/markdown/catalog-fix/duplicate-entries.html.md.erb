@@ -1,5 +1,5 @@
 ---
-title: Removing Duplicate Entries from Catalog Tables
+title: Removing Duplicate Entries
 ---
 
 Most Greenplum Database catalog tables have unique indexes on certain columns, including the automatically-generated system columns such as OID.  Indexing or transaction management problems can lead to scenarios where duplicate entries are added to catalog tables.  Follow the steps in this procedure to remove duplicate entries.
@@ -81,7 +81,7 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
 5. Perform this query on each set of indexed columns that you recorded in Step 3, to display the duplicate values that you must correct:
 
     ``` SQL
-    SELECT <columns>, count(*) FROM <table> GROUP BY <columns> HAVING count(*) > 1;
+    gpadmin=# SELECT <columns>, count(*) FROM <table> GROUP BY <columns> HAVING count(*) > 1;
     ```
 
     Substitute the actual indexed column(s) that you determined in step 3, as well as the affected table name.  The `pg_class` example contains two indexes, and would require two queries. The first query, for the `pg_class_oid_index` index, is:
@@ -104,7 +104,6 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
     ```
 
     ``` SQL
-    gpadmin=# SELECT relname, relnamespace, count(*) FROM pg_class GROUP BY relname, relnamespace HAVING count(*) > 1 ;
                             relname                             | relnamespace | count
     ----------------------------------------------------------------+--------------+-------
      dup_table                                                      |           11 |     2
@@ -118,13 +117,13 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
     Use the output from the previous queries (from Step 5) to form a query using syntax:
 
     ``` SQL
-    SELECT xmin, xmax, ctid, oid, * FROM <table> WHERE <column> = <duplicate_value> [AND <column> = <duplicate_value>] [...]
+    gpadmin=# SELECT xmin, xmax, ctid, oid, * FROM <table> WHERE <column> = <duplicate_value> [AND <column> = <duplicate_value>] [...]
     ```
 
     The first example query indicated that `oid` value "3233" was duplicated in `pg_class`, so the query is:
 
     ``` SQL
-    SELECT xmin, xmax, ctid, oid, * FROM pg_class WHERE oid = 3233;
+    gpadmin=# SELECT xmin, xmax, ctid, oid, * FROM pg_class WHERE oid = 3233;
     ```
 
     ``` SQL
@@ -140,7 +139,7 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
     The second example query requires that you plug-in the returned values for both `relname` and `relnamespace`, as follows:
 
     ``` SQL
-    SELECT xmin, xmax, ctid, oid, * FROM pg_class WHERE relname = 'dup_table' and relnamespace = 11;
+    gpadmin=# SELECT xmin, xmax, ctid, oid, * FROM pg_class WHERE relname = 'dup_table' and relnamespace = 11;
     ```
 
     ``` SQL
@@ -155,32 +154,36 @@ Most Greenplum Database catalog tables have unique indexes on certain columns, i
 
 7. *If the remaining system column values in the duplicate rows match exactly*, record the `ctid` value of either duplicate row and skip to the next step to remove the duplicate value.
 
-    *If **any** of the remaining system column values in the duplicate rows contain different values*, follow these steps to determine which of the rows is safe to remove. Continue with the next step only after you have carefully determined which row to remove:
+    <br/>*If <b>any</b> of the remaining system column values in the duplicate rows contain different values*, follow these steps to determine which of the rows is safe to remove. Continue with the next step only after you have carefully determined which row to remove:
 
-    **FIXME:** This procedure only seems to apply if `relfilenode` is the column with differing values.  Is that the only column users need to look at in previous step?  If not, what would this procedure look like to check other columns?
+    <br/>**FIXME:** This procedure only seems to apply if `relfilenode` is the column with differing values.  Is that the only column users need to look at in previous step?  If not, what would this procedure look like to check other columns?
 
     1. Record the significant system column values that *differ* in the output from the previous step. In the previous example, `relfilenode` differs and has the values 2703 and 2759.
 
     2. 
 
 8. Before deleting any of the duplicate rows, make a backup copy of the data to a local file, using a command similar to:
+
     ``` SQL
-    COPY (SELECT <duplicate_value>, * from <table_name>) TO '/tmp/<table_name>_<port>_<date>';
+    gpadmin=# COPY (SELECT <duplicate_value>, * from <table_name>) TO '/tmp/<table_name>_<port>_<date>';
     ```
+
     For example:
+
     ``` SQL
-    COPY (SELECT, oid, * from pg_class) to '/tmp/pg_class_40000_20180521';
+    gpadmin=# COPY (SELECT, oid, * from pg_class) to '/tmp/pg_class_40000_20180521';
     ```
 
 9. Enable modification of the system tables:
+
     ``` SQL
-    SET enable_system_table_mods=dml;
+    gpadmin=# SET enable_system_table_mods=dml;
     ```
 
 10. Use a transaction to delete teh selected `ctid` value, verifying that only a single row is left in the table. For example:
 
     ``` SQL
-    BEGIN;
+    gpadmin=# BEGIN;
     DELETE FROM pg_class WHERE ctid='(11,36)'
     SELECT xmin, xmax, oid, * FROM pg_class WHERE relname = 'duplicate_table' AND relnamespace=2200; 
     -- Commit only if the above query returns a single row.

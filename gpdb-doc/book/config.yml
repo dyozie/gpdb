@@ -15,6 +15,12 @@ sections:
   directory: docs/600/pxf
   subnav_template: pxf-subnav
 
+- repository:
+    name: markdown
+    at_path: catalog-fix
+  directory: docs/600/catalog-fix
+  subnav_template: catalog-fix-subnav
+
 dita_sections:
 - repository:
     name: dita

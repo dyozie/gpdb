@@ -1,5 +1,5 @@
 ---
-title: Fixing Inconsistencies with Persistent Tables
+title: Rebuilding Persistent Tables
 ---
 
 `gpcheckcat` output can sometimes report inconsistencies with Greenplum persistent tables. These errors indicate a problem with the state of persistent database objects or file system objects on a segment. For example, a database object might be considered in a "creation incomplete" state even though all transactions have completed. At the file system level, a file might exist in a database directory without having a corresponding object in the database's system tables. Follow this procedure to rebuild persistent tables in order to resolve these errors.
@@ -12,9 +12,9 @@ title: Fixing Inconsistencies with Persistent Tables
 
 - This procedure is compatible only with Greenplum Database versions 4.3.10 and later, and versions 5.0.0 and later. 
 
-- Use `gpcheckcat` to verify that your system catalog contains persistent table errors. See [Resolving System Catalog Issues](resolve-catalog-issues.html) for a list of common symptoms.
+- Use `gpcheckcat -R persistent` to verify that your system catalog contains persistent table errors.
 
-- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors, inconsistency errors, missing entry errors, extraneous entry errors, or dependency-related errors *before* you follow this procedure. See [FIXME](fixme.html).
+- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors, inconsistency errors, missing entry errors, extraneous entry errors, or dependency-related errors *before* you follow this procedure. See [Fixing Problems with Greenplum System Catalogs](process.html).
 
 - Perform a full backup of your database before you perform this procedure.
 
@@ -32,7 +32,7 @@ title: Fixing Inconsistencies with Persistent Tables
     Add the content IDs of the segment(s) indicated by the `gpcheckcat` output. If you need to determine the content ID of a particular host, query the `content` column in `gp_segment_configuration`. For example:
 
     ``` sql
-    =# select hostname, address, content from gp_segment_configuration;
+    gpadmin=# select hostname, address, content from gp_segment_configuration;
     ```
 
     Note that -1 always indicates the master segment.
@@ -73,7 +73,6 @@ title: Fixing Inconsistencies with Persistent Tables
     ```
 
     You will need to confirm and then re-confirm your decision to run the utility. `gppersistentrebuild` begins by validating that each segment identified in the contend ID file exists. It then performs these steps:
-
     - It backs up all files that will be overwritten during the rebuild process.  All backup files are placed in subdirectories of `$MASTER_DATA_DIRECTORY/global` that have the directory name format `pg_files_bk_<timestamp>`.
     - It uses the system functions `gp_persistent_reset_all()` and `gp_persistent_build_all()` to rebuild all persistent tables.
     - If a rebuild operation fails for a segment, the utility restores the backup for that segment and resets the transaction log.

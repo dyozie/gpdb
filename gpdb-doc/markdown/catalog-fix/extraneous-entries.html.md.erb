@@ -1,5 +1,5 @@
 ---
-title: Fixing Extraneous Entries in Catalog Tables
+title: Removing Extraneous Entries
 ---
 
 Except for persistent tables, all Greenplum Database catalog tables should have same values on all segments. `gpcheckcat` displays an error message if there is an extraneous value in a catalog table on a segment. Follow this procedure to identify and then resolve extraneous catalog entries.
@@ -10,7 +10,7 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
     <div class="note warning">This procedure is intended only for users of the open source Greenplum Database software, or for Pivotal Greenplum Database customers who cannot allow Pivotal Support to directly access their systems or data. <br/><br/>Changes to Pivotal Greenplum Database system catalog tables or views are not supported.</div>
 
-- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors or inconsistency errors *before* you follow this procedure. See [FIXME](fixme.html).
+- If you have identified multiple catalog problems with `gpcheckcat`, fix any duplicate entry errors or inconsistency errors *before* you follow this procedure. See [Fixing Problems with Greenplum System Catalogs](process.html).
 
 - Perform a full backup of your database before you perform this procedure.
 
@@ -68,7 +68,7 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
     Substitute the `<segment_host>`, `<segment_port>` for your system.
     
-    <br/><br/>The sample output above confirms that the `public.test1` table is affected.
+    <br/>The sample output above confirms that the `public.test1` table is affected.
 
 6. Check the count of the table on the current segment to see if the data is accessible:
 
@@ -91,7 +91,7 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 7. Execute the same query to determine the count of the table on the master segment. Because the table was reindexed, a failure to obtain rows on master confirms that the segment contains the extra rows.  For example:
 
     ``` bash
-    $  SELECT count(*) FROM public.test1;
+    $ SELECT count(*) FROM public.test1;
     ```
     ``` sql
     ERROR: relation "public.test1" does not exist
@@ -106,6 +106,8 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
         ``` sql
         gpadmin=# \d+ pg_attribute
+        ```
+        ``` sql
          Table "pg_catalog.pg_attribute"
          Column | Type | Modifiers | Storage | Description
         ---------------+----------+-----------+---------+-------------
@@ -121,7 +123,7 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
         
         ```
 
-        Look for the "Has OIDS" line in the output.
+        Look for the `Has OIDS` line in the output.
 
     2. Connect using utility mode to the segment that exhibits the problem:
     
@@ -132,13 +134,13 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
     3. Backup the affected catalog table. If the table has an OID column, use the command:
 
         ``` sql
-        COPY (SELECT oid, * from <table_name>) to '/tmp/<table_name>_gpadmin_<port>_<date>';
+        gpadmin=# COPY (SELECT oid, * from <table_name>) to '/tmp/<table_name>_gpadmin_<port>_<date>';
         ```
 
         If the catalog table does not have an OID column, use the command:
 
         ``` sql
-        COPY <table_name> to '/tmp/<table_name>_gpadmin_<port>_<date>';
+        gpadmin=# COPY <table_name> to '/tmp/<table_name>_gpadmin_<port>_<date>';
         ```
 
         Because the example catalog in this procedure has no OID column, the copy command would be similar to:
