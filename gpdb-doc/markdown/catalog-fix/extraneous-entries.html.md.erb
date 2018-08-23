@@ -14,6 +14,10 @@ Except for persistent tables, all Greenplum Database catalog tables should have 
 
 - Perform a full backup of your database before you perform this procedure.
 
+## Scope
+
+In this procedure you will first confirm that extraneous entries exist in the system catalog. You will then run SQL queries to determine and confirm which Greenplum segment has the extra entry. After determining which segment is affected, you will backup the system table and then remove the extra entry from the segment.
+
 ## Procedure
 
 1. Execute `gpcheckcat -R missing_extraneous <dbname>` and examine the output. Confirm that the output indicates one or more extraneous entries. For example, the following `gpcheckcat` output shows extraneous entries in the `pg_attributes` table, indicated by the value `extra` in the `exists` column:

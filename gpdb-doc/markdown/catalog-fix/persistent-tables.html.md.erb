@@ -18,6 +18,10 @@ title: Rebuilding Persistent Tables
 
 - Perform a full backup of your database before you perform this procedure.
 
+## Scope
+
+In this procedure you will first examine the `gpcheckcat` output to determine which segments are affected by persistent table issues. You will create a file that contains the content IDs for all affected segments. After restricting access to the Greenplum cluster, you will use the content ID list to run the `gppersistentrebuild` utility, which rebuilds persistent tables on those segments. 
+
 ## Procedure
 
 1. Examine the `gpcheckcat` output to obtain a list of the Greenplum segments that are affected by persistent table issues. Record the content ID of each affected segment.
