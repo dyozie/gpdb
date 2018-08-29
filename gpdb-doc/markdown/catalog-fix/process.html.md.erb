@@ -6,7 +6,7 @@ title: Fixing Problems with Greenplum System Catalogs
 
 The Greenplum System Catalog is a collection of tables and views, having names prefixed with `gp_` or `pg_`, that store critical information about database objects on all segments of the Greenplum cluster. Consistent system catalog data is essential to the proper functioning of any database system.
 
-For a Greenplum deployment, the `gpcheckcat` utility provides the main interface for validating the consistency of the Greenplum System Catalog. All administrators should incorporate a regular, full run of `gpcheckcat` as part of a regular maintenance routine.  See [Recommended Monitoring and Maintenance Tasks](../admin_guide/monitoring/monitoring.html) for more information.
+For a Greenplum deployment, the `gpcheckcat` utility provides the main interface for validating the consistency of the Greenplum System Catalog. All administrators should incorporate a regular, full run of `gpcheckcat` as part of a regular maintenance routine.  See [Recommended Monitoring and Maintenance Tasks](http://gpdb.docs.pivotal.io/latest/admin_guide/monitoring/monitoring.html) for more information.
 
 If `gpcheckcat` indicates problems in the system catalog, your first course of action should be to contact Pivotal Support to resolve the issue. If you are using the open source build of Greenplum, or if you cannot allow Pivotal Support to access your systems or data, then the procedures described below highlight the process for fixing most common system catalog problems.
 
