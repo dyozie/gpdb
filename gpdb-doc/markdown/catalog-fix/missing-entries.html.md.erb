@@ -36,7 +36,7 @@ In this procedure you will first confirm that missing entries exist in the syste
      90592940 | tableoid | missing | {0}
      90592940 | xmin | missing | {0}
     ```
-    The above output shows a problem with missing entries for the `attrelid` value 90592940 on segment 0 (master).
+    The above output shows a problem with missing entries for the `attrelid` value 90592940 on segment.
 
     <br/>**Note:** Missing entries can also be observed as "missing attribute(s)" errors that occur when you execute DDL or DML statements. For example:
 
@@ -49,7 +49,7 @@ In this procedure you will first confirm that missing entries exist in the syste
     ERROR: catalog is missing 2 attribute(s) for relid 90592940 (relcache.c:961) (seg0 slice1 sdw1:46000 pid=20202) (cdbdisp.c)
     ```
 
-    The above error also shows missing entries for the `attrelid` value 90592940 on segment 0 (master).
+    The above error also shows missing entries for the `attrelid` value 90592940 on segment 0.
 
 3. Record the `attrelid` of the problem entry from the `gpcheckcat` output (90592940 in the above example), as well as the `segids` value where the problem occurred.
 
@@ -81,7 +81,7 @@ In this procedure you will first confirm that missing entries exist in the syste
 
     If a table name is returned (`public.test` in the above example), then you can use the table for data access, or you can backup the table data prior to resolving the catalog problem.
 
-7. Check the row count for the missing entry on all segments to confirm that the problem exists on the segment that you recorded earlier (`segids` value 0, the master segment, in this example scenario):
+7. Check the row count for the missing entry on all segments to confirm that the problem exists on the segment that you recorded earlier (`segids` value 0 in this example scenario):
 
     1. First, use the following query to determine the expected row count for the entry:
 
@@ -119,7 +119,7 @@ In this procedure you will first confirm that missing entries exist in the syste
         (1 row)
         ```
 
-        In the above example, only segment 1 shows the expected row count.  Segment 0 (the master segment) is missing from the output, so segment 0 is confirmed as the problem segment.
+        In the above example, only segment 1 shows the expected row count.  Segment 0 is missing from the output, so segment 0 is confirmed as the problem segment.
 
         <br/>**Note** In some cases, the problem segment may appear in the output but show a row count that is greater than or less than the expected count value.  
 
