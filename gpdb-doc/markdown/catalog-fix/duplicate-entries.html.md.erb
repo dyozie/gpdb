@@ -204,7 +204,7 @@ In this procedure you will connect to individual segments in the Greenplum datab
 9. Enable modification of the system tables:
 
     ``` SQL
-    gpadmin=# SET enable_system_table_mods=dml;
+    gpadmin=# SET allow_system_table_mods=dml;
     ```
 
 10. <a id="step10"></a>Use a transaction to delete the selected `ctid` value, verifying that only a single row is left in the table for the value. For example:
