@@ -20,7 +20,7 @@ In this procedure you will first confirm that extraneous entries exist in the sy
 
 ## Procedure
 
-1. Execute `gpcheckcat -R missing_extraneous <dbname>` and examine the output. Confirm that the output indicates one or more extraneous entries. For example, the following `gpcheckcat` output shows extraneous entries in the `pg_attributes` table, indicated by the value `extra` in the `exists` column:
+1. Execute `gpcheckcat -R missing_extraneous <dbname>` and examine the output. Confirm that the output indicates one or more extraneous entries. For example, the following `gpcheckcat` output shows extraneous entries in the `pg_attribute` table, indicated by the value `extra` in the `exists` column:
 
     ``` bash
     20160706:14:24:32:020381 gpcheckcat:mdw:gpadmin-[ERROR]:- pg_attribute has 8 issue(s)
@@ -153,10 +153,12 @@ In this procedure you will first confirm that extraneous entries exist in the sy
         gpadmin=# COPY pg_attribute to '/tmp/pg_class_gpadmin_46000_20180627';
         ```
 
-10. To correct extra entries:
-
-    **FIXME: need gpmt alternative**
+10. To remove the extra entry, log into the affected segment in utility mode and delete only the extraneous entry from the catalog table. For example:
 
     ``` bash
-    $ gpmt gpcheckcat -pgclass_extra
+    gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "set allow_system_table_mods=dml ; DELETE FROM pg_attribute WHERE attrelid=90600133 ;"
     ```
+
+    The above command assumes that `attrelid` value 90600133 is the only extra value in `pg_attribute`.
+
+11. Re-run `gpcheckcat -R missing_extraneous <dbname>` to confirm that you resolved the extraneous entry error.

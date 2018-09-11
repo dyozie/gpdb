@@ -183,13 +183,13 @@ In this procedure you will first confirm that missing entries exist in the syste
         gpadmin=# COPY (SELECT oid, * from pg_class ) to '/tmp/pg_class_gpadmin_46000_20180627';
         ```
 
-10. To correct entries that are missing from the catalog on a segment, you copy entries from a segment that contains all of entries for that catalog.
+10. To correct entries that are missing from the catalog on a segment, you copy entries from a segment that contains all of the entries for that catalog. This example first creates a copy of the affected entry on segment host sdw1, and then deletes and restores from the copy on affected host sdw2:
 
-       <br/>**FIXME:  commands were truncated and referenced the wrong system table.**
-
-       ``` sql 
-       gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46001 gpadmin -c "COPY (SELECT * FROM pg_attribute WHERE
-       COPY 38
-       gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "set       allow_system_table_mods=dml ; DELE
-       COPY
+       ``` bash 
+       gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46001 gpadmin -c "COPY (SELECT * FROM pg_attribute WHERE attrelid=90592940) to '/tmp/pg_attribute_gpadmin_46001_copy' "
        ```
+       ``` bash
+       gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw2 -p 46000 gpadmin -c "set       allow_system_table_mods=dml ; DELETE FROM pg_attribute WHERE attrelid=90592940 ; copy pg_attribute from '/tmp/pg_attribute_gpadmin_46001_copy' "
+       ```
+
+11. Re-run `gpcheckcat -R missing_extraneous <dbname>` to confirm that you resolved the missing entry error.
