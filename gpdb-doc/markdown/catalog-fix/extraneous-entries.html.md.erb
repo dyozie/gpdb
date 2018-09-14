@@ -153,7 +153,16 @@ In this procedure you will first confirm that extraneous entries exist in the sy
         gpadmin=# COPY pg_attribute to '/tmp/pg_class_gpadmin_46000_20180627';
         ```
 
-10. To remove the extra entry, log into the affected segment in utility mode and delete only the extraneous entry from the catalog table. For example:
+10. If extra entries are present in *all* of the catalog tables for a segment (as in the above example) then using utility-mode connection to drop the table will clear the inconsistencies.
+
+    ``` bash
+    gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "DROP TABLE public.test1"
+    ```
+
+    **WARNING:** Do not delete individual catalog entries (as described in the next step) if data is accessible on the segment. Deleting entries in this case will create more inconsistencies.
+
+
+11. If only a specific table is showing an extra entry then you can manually delete the entry. To remove the extra entry, log into the affected segment in utility mode and delete only the extraneous entry from the catalog table. For example:
 
     ``` bash
     gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46000 gpadmin -c "set allow_system_table_mods=dml ; DELETE FROM pg_attribute WHERE attrelid=90600133 ;"
@@ -161,4 +170,4 @@ In this procedure you will first confirm that extraneous entries exist in the sy
 
     The above command assumes that `attrelid` value 90600133 is the only extra value in `pg_attribute`.
 
-11. Re-run `gpcheckcat -R missing_extraneous <dbname>` to confirm that you resolved the extraneous entry error.
+12. Re-run `gpcheckcat -R missing_extraneous <dbname>` to confirm that you resolved the extraneous entry error.

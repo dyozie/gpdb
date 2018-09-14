@@ -188,6 +188,9 @@ In this procedure you will first confirm that missing entries exist in the syste
     ``` bash 
     gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw1 -p 46001 gpadmin -c "COPY (SELECT * FROM pg_attribute WHERE attrelid=90592940) to '/tmp/pg_attribute_gpadmin_46001_copy' "
     ```
+
+    The above command creates a local copy on the segment (sdw1 in the above example). Use `scp` or a file share to make this copy on available on the segment where you will restore the entry (for example sdw2). After the copy file is available on the affected segment, use a utility-mode connection to the affected segment to delete the entry and then restore from the copy file. For example:
+
     ``` bash
     gpadmin@mdw# PGOPTIONS='-c gp_session_role=utility' psql -h sdw2 -p 46000 gpadmin -c "set       allow_system_table_mods=dml ; DELETE FROM pg_attribute WHERE attrelid=90592940 ; copy pg_attribute from '/tmp/pg_attribute_gpadmin_46001_copy' "
     ```
