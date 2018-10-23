@@ -28,19 +28,13 @@ In this procedure you will first confirm that dependency errors exist in the sys
     $ gpcheckcat -v -R dependency  -p <port> template1
     ```
 
-2. Examine the `gpcheckcat` output to determine which segment(s) are affected by dependency-related issues.  Record a list of these segments.
-
-2. For dependency-related errors, `gpcheckcat` generates a verification file with the `.sql` extension to provide further information. The file is created in the `/home/gpadmin/gpAdminLogs` directory. 
-
-    <br/>Execute the verification file on each affected segment, and save the output.
-
-3. As an alternative to running the verification file (or if no verification file is created), execute this [dep.sql](dep.sql) file on each affected segment, and save the output. For example:
+3. Download and execute this [dep.sql](dep.sql) file on each affected segment, and save the output. For example:
 
     ``` bash
     $ PGOPTIONS='-c gp_session_role=utility' psql  -h <segment_host> -p <segment_port>  <dbname> -f dep.sql > dep.out
     ```
 
-4. Look through the verification file output and/or the `dep.sql` file output to determine the list of orphaned entries. This is the list of entries you will first back up and then remove.
+4. Look through the `dep.sql` file output to determine the list of orphaned entries. This is the list of entries you will first back up and then remove.
 
 5. For each orphaned entry you discovered, follow this procedure to first back up and then remove the entry from an affected segment:
 
